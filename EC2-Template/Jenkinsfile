@@ -11,13 +11,23 @@ pipeline {
         stage('Clone Code') {
             steps {
                 git branch: 'main',
-                url: 'https://github.com/PrathapDev03/Login-Pages-Templates/EC2-Template.git'
+                url: 'https://github.com/PrathapDev03/Login-Pages-Templates.git'
+            }
+        }
+
+        stage('Move to Project Folder') {
+            steps {
+                dir('EC2-Template') {
+                    sh 'ls -la'
+                }
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t $IMAGE_NAME .'
+                dir('EC2-Template') {
+                    sh 'docker build -t $IMAGE_NAME .'
+                }
             }
         }
 
