@@ -2,62 +2,82 @@ pipeline {
     agent any
 
     environment {
-        AWS_ACCOUNT_ID = "379113716280"
-        AWS_DEFAULT_REGION = "ap-southeast-1"
+        AWS_REGION = "ap-southeast-1"
+        ACCOUNT_ID = "379113716280"
 
-        IMAGE_REPO_NAME = "ecs-login"
-        IMAGE_TAG = "latest"
+        ECR_REPO = "ecs-frontend"
 
-        ECR_REPO = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${IMAGE_REPO_NAME}"
+        IMAGE_TAG = "${BUILD_NUMBER}"
 
-        ECS_CLUSTER = "ECS-login-cluster"
-        ECS_SERVICE = "YOUR_SERVICE_NAME"
-        TASK_FAMILY = "YOUR_TASK_FAMILY"
+        IMAGE_URI = "${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}:${IMAGE_TAG}"
+
+        ECS_CLUSTER = "frontend-cluster"
+
+        ECS_SERVICE = "ecs-frontend-service"
+
+        TASK_FAMILY = "ecs-frontend-task"
     }
 
     stages {
 
-        stage('Clone Code') {
+        stage('Clone Repository') {
             steps {
-                git branch: 'main',
-                url: 'https://github.com/YOUR_GITHUB_USERNAME/YOUR_REPO_NAME.git'
+                git 'https://github.com/PrathapDev03/Login-Pages-Templates.git'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t $IMAGE_REPO_NAME:$IMAGE_TAG .'
+                dir('ECS-Template') {
+                    sh 'docker build -t $ECR_REPO:$IMAGE_TAG .'
+                }
             }
         }
 
         stage('Login to ECR') {
             steps {
                 sh '''
-                aws ecr get-login-password --region $AWS_DEFAULT_REGION | \
-                docker login --username AWS --password-stdin \
-                $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+                aws ecr get-login-password --region $AWS_REGION | \
+                docker login --username AWS \
+                --password-stdin $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
                 '''
             }
         }
 
-        stage('Tag Docker Image') {
+        stage('Tag Image') {
             steps {
-                sh '''
-                docker tag $IMAGE_REPO_NAME:$IMAGE_TAG \
-                $ECR_REPO:$IMAGE_TAG
-                '''
+                sh 'docker tag $ECR_REPO:$IMAGE_TAG $IMAGE_URI'
             }
         }
 
-        stage('Push Docker Image') {
+        stage('Push Image to ECR') {
             steps {
-                sh '''
-                docker push $ECR_REPO:$IMAGE_TAG
-                '''
+                sh 'docker push $IMAGE_URI'
             }
         }
 
-        stage('Force ECS Deployment') {
+        stage('Update ECS Task Definition') {
+            steps {
+                dir('ECS-Template') {
+                    sh '''
+                    sed -i "s|IMAGE_URI|$IMAGE_URI|g" task-definition.json
+                    '''
+                }
+            }
+        }
+
+        stage('Register Task Definition') {
+            steps {
+                dir('ECS-Template') {
+                    sh '''
+                    aws ecs register-task-definition \
+                    --cli-input-json file://task-definition.json
+                    '''
+                }
+            }
+        }
+
+        stage('Deploy to ECS Service') {
             steps {
                 sh '''
                 aws ecs update-service \
@@ -66,16 +86,6 @@ pipeline {
                 --force-new-deployment
                 '''
             }
-        }
-    }
-
-    post {
-        success {
-            echo 'ECS Deployment Successful'
-        }
-
-        failure {
-            echo 'ECS Deployment Failed'
         }
     }
 }
