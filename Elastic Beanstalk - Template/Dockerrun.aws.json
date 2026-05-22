@@ -1,13 +1,12 @@
 {
   "AWSEBDockerrunVersion": "1",
   "Image": {
-    "Name": "379113716280.dkr.ecr.ap-southeast-1.amazonaws.com/ebs_login:latest",
+    "Name": "379113716280.dkr.ecr.ap-southeast-1.amazonaws.com/ebs-frontend:latest",
     "Update": "true"
   },
   "Ports": [
     {
-      "ContainerPort": "80",
-      "HostPort": "80"
+      "ContainerPort": 80
     }
   ]
 }
