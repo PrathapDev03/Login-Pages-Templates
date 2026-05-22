@@ -13,7 +13,7 @@ pipeline {
 
         stage('Clone Repository') {
             steps {
-                git 'YOUR_GITHUB_REPO'
+                git 'https://github.com/PrathapDev03/Login-Pages-Templates.git'
             }
         }
 
