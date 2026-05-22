@@ -1,44 +1,28 @@
-import React, { useState } from 'react';
-import './Login.css';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EBS Login Page</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
 
-function Login() {
+<div class="container">
+  <div class="login-box">
+    
+    <h2>EBS Login Page</h2>
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+    <input type="text" placeholder="Enter Username">
 
-  const handleLogin = () => {
-    alert('Login Successful'); 
-  };
+    <input type="password" placeholder="Enter Password">
 
-  return (
-    <div className="login-container">
+    <button>Sign In</button>
 
-      <div className="login-card">
- 
-        <h2>React Login</h2>
+    <p>Welcome to Elastic Beanstalk Deployment</p>
 
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
+  </div>
+</div>
 
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-
-        <button onClick={handleLogin}>
-          Login
-        </button>
-
-      </div>
-
-    </div>
-  );
-}
-
-export default Login;
+</body>
+</html>
