@@ -52,7 +52,7 @@ pipeline {
             steps {
                 dir('Elastic Beanstalk - Template') {
                     sh 'zip -r deploy.zip .'
-                    sh 'eb deploy'
+                    sh '/home/ubuntu/.local/bin/eb deploy'
                 }
             }
         }
