@@ -2,133 +2,58 @@ pipeline {
     agent any
 
     environment {
-        AWS_ACCOUNT_ID = 379113716280
-        AWS_DEFAULT_REGION = "ap-southeast-1"
-
-        IMAGE_REPO_NAME = "ebs_login"
+        AWS_REGION = "ap-southeast-1"
+        ECR_REPO = "ebs-frontend"
+        ACCOUNT_ID = "379113716280"
         IMAGE_TAG = "latest"
-
-        ECR_REPO = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${IMAGE_REPO_NAME}"
-
-        EB_APP_NAME = "EBS_Loginp"
-        EB_ENV_NAME = "EBSLoginp-env"
-
-        S3_BUCKET = "ebs-s3-login" 
-        VERSION_LABEL = "v-${BUILD_NUMBER}"
+        IMAGE_URI = "${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}:${IMAGE_TAG}"
     }
 
     stages {
 
         stage('Clone Repository') {
             steps {
-                git branch: 'main',
-                url: 'https://github.com/PrathapDev03/Login-Pages-Templates.git'
+                git 'YOUR_GITHUB_REPO'
             }
         }
 
         stage('Build Docker Image') {
             steps {
                 dir('Elastic Beanstalk - Template') {
-                    sh '''
-                    docker build -t $IMAGE_REPO_NAME:$IMAGE_TAG .
-                    docker images
-                    '''
+                    sh 'docker build -t $ECR_REPO .'
                 }
             }
         }
 
-        stage('Login to ECR') {
+        stage('Login to AWS ECR') {
             steps {
                 sh '''
-                aws ecr get-login-password --region $AWS_DEFAULT_REGION | \
-                docker login --username AWS --password-stdin $ECR_REPO
+                aws ecr get-login-password --region $AWS_REGION | \
+                docker login --username AWS \
+                --password-stdin $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
                 '''
             }
         }
 
         stage('Tag Docker Image') {
             steps {
-                sh '''
-                docker tag $IMAGE_REPO_NAME:$IMAGE_TAG \
-                $ECR_REPO:$IMAGE_TAG
-                '''
+                sh 'docker tag $ECR_REPO:latest $IMAGE_URI'
             }
         }
 
-        stage('Push Docker Image') {
+        stage('Push Image to ECR') {
             steps {
-                sh '''
-                docker push $ECR_REPO:$IMAGE_TAG
-                '''
-            }
-        }
-
-        stage('Create Dockerrun File') {
-            steps {
-                sh '''
-                cat > Dockerrun.aws.json <<EOF
-{
-  "AWSEBDockerrunVersion": "1",
-  "Image": {
-    "Name": "$ECR_REPO:$IMAGE_TAG",
-    "Update": "true"
-  },
-  "Ports": [
-    {
-      "ContainerPort": "80"
-    }
-  ]
-}
-EOF
-                '''
-            }
-        }
-
-        stage('Zip Deployment Package') {
-            steps {
-                sh '''
-                zip deploy.zip Dockerrun.aws.json
-                '''
-            }
-        }
-
-        stage('Upload to S3') {
-            steps {
-                sh '''
-                aws s3 cp deploy.zip s3://$S3_BUCKET/deploy-$BUILD_NUMBER.zip
-                '''
-            }
-        }
-
-        stage('Create Elastic Beanstalk Version') {
-            steps {
-                sh '''
-                aws elasticbeanstalk create-application-version \
-                --application-name $EB_APP_NAME \
-                --version-label $VERSION_LABEL \
-                --source-bundle S3Bucket="$S3_BUCKET",S3Key="deploy-$BUILD_NUMBER.zip"
-                '''
+                sh 'docker push $IMAGE_URI'
             }
         }
 
         stage('Deploy to Elastic Beanstalk') {
             steps {
-                sh '''
-                aws elasticbeanstalk update-environment \
-                --environment-name $EB_ENV_NAME \
-                --version-label $VERSION_LABEL
-                '''
+                dir('Elastic Beanstalk - Template') {
+                    sh 'zip -r deploy.zip .'
+                    sh 'eb deploy'
+                }
             }
-        }
-    }
-
-    post {
-        success {
-            echo 'Deployment Successful'
-        }
-
-        failure {
-            echo 'Deployment Failed'
         }
     }
 }
