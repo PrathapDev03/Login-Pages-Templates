@@ -6,7 +6,7 @@
   "containerDefinitions": [
     {
       "name": "ecs-frontend",
-      "image": "IMAGE_URI",
+      "image": "379113716280.dkr.ecr.ap-southeast-1.amazonaws.com/ecs-frontend:latest",
       "cpu": 0,
       "essential": true,
       "portMappings": [
