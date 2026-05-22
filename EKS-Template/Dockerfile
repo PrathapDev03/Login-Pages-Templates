@@ -1,9 +1,14 @@
-FROM python:3.11-slim
+# Use Nginx base image
+FROM nginx:alpine
 
-WORKDIR /app
+# Remove default nginx files
+RUN rm -rf /usr/share/nginx/html/*
 
-COPY . .
+# Copy project files to nginx folder
+COPY . /usr/share/nginx/html
 
+# Expose port 80
 EXPOSE 80
 
-CMD ["python", "-m", "http.server", "80"]
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"]

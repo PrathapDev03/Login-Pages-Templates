@@ -2,41 +2,80 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "split-login-page"
-        CONTAINER_NAME = "split-login-container"
+        AWS_ACCOUNT_ID = "379113716280"
+        AWS_DEFAULT_REGION = "ap-southeast-1"
+
+        IMAGE_REPO_NAME = "ecs-login"
+        IMAGE_TAG = "latest"
+
+        ECR_REPO = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${IMAGE_REPO_NAME}"
+
+        ECS_CLUSTER = "ECS-login-cluster"
+        ECS_SERVICE = "YOUR_SERVICE_NAME"
+        TASK_FAMILY = "YOUR_TASK_FAMILY"
     }
 
     stages {
 
         stage('Clone Code') {
             steps {
-                git 'https://github.com/yourusername/Login-Pages.git'
+                git branch: 'main',
+                url: 'https://github.com/YOUR_GITHUB_USERNAME/YOUR_REPO_NAME.git'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t $IMAGE_NAME .'
+                sh 'docker build -t $IMAGE_REPO_NAME:$IMAGE_TAG .'
             }
         }
 
-        stage('Remove Old Container') {
+        stage('Login to ECR') {
             steps {
                 sh '''
-                docker stop $CONTAINER_NAME || true
-                docker rm $CONTAINER_NAME || true
+                aws ecr get-login-password --region $AWS_DEFAULT_REGION | \
+                docker login --username AWS --password-stdin \
+                $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
                 '''
             }
         }
 
-        stage('Run Docker Container') {
+        stage('Tag Docker Image') {
             steps {
                 sh '''
-                docker run -d -p 80:80 \
-                --name $CONTAINER_NAME \
-                $IMAGE_NAME
+                docker tag $IMAGE_REPO_NAME:$IMAGE_TAG \
+                $ECR_REPO:$IMAGE_TAG
                 '''
             }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                sh '''
+                docker push $ECR_REPO:$IMAGE_TAG
+                '''
+            }
+        }
+
+        stage('Force ECS Deployment') {
+            steps {
+                sh '''
+                aws ecs update-service \
+                --cluster $ECS_CLUSTER \
+                --service $ECS_SERVICE \
+                --force-new-deployment
+                '''
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'ECS Deployment Successful'
+        }
+
+        failure {
+            echo 'ECS Deployment Failed'
         }
     }
 }

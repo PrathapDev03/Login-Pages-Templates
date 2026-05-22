@@ -2,24 +2,15 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "login-app"
-        CONTAINER_NAME = "login-container"
+        IMAGE_NAME = "ec2-frontend"
+        CONTAINER_NAME = "ec2-container"
     }
 
     stages {
 
-        stage('Clone Code') {
+        stage('Clone') {
             steps {
-                git branch: 'main',
-                url: 'https://github.com/PrathapDev03/Login-Pages-Templates.git'
-            }
-        }
-
-        stage('Move to Project Folder') {
-            steps {
-                dir('EC2-Template') {
-                    sh 'ls -la'
-                }
+                git 'https://github.com/PrathapDev03/Login-Pages-Templates.git'
             }
         }
 
@@ -33,14 +24,11 @@ pipeline {
 
         stage('Stop Old Container') {
             steps {
-                sh '''
-                docker stop $CONTAINER_NAME || true
-                docker rm $CONTAINER_NAME || true
-                '''
+                sh 'docker rm -f $CONTAINER_NAME || true'
             }
         }
 
-        stage('Run Docker Container') {
+        stage('Run Container') {
             steps {
                 sh '''
                 docker run -d \
@@ -49,16 +37,6 @@ pipeline {
                 $IMAGE_NAME
                 '''
             }
-        }
-    }
-
-    post {
-        success {
-            echo 'Application Deployed Successfully!'
-        }
-
-        failure {
-            echo 'Deployment Failed!'
         }
     }
 }

@@ -1,11 +1,14 @@
+# Use Nginx base image
 FROM nginx:alpine
 
+# Remove default nginx files
 RUN rm -rf /usr/share/nginx/html/*
 
-WORKDIR /usr/share/nginx/html
+# Copy project files to nginx folder
+COPY . /usr/share/nginx/html
 
-COPY . .
-
+# Expose port 80
 EXPOSE 80
 
+# Start nginx
 CMD ["nginx", "-g", "daemon off;"]
