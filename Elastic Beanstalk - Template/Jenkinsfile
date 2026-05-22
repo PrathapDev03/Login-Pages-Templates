@@ -29,7 +29,10 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 dir('Elastic Beanstalk - Template') {
-                    sh 'docker build -t frontend-project:latest .'
+                    sh '''
+                    docker build -t $IMAGE_REPO_NAME:$IMAGE_TAG .
+                    docker images
+                    '''
                 }
             }
         }
