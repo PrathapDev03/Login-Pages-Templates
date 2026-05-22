@@ -10,10 +10,10 @@ pipeline {
 
         ECR_REPO = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${IMAGE_REPO_NAME}"
 
-        EB_APP_NAME = "EBS_Login"
-        EB_ENV_NAME = "EBSLogin-env"
+        EB_APP_NAME = "EBSLoginp"
+        EB_ENV_NAME = "EBSLoginp-env"
 
-        S3_BUCKET = "ebs-s3-login"
+        S3_BUCKET = "ebs-s3-login" 
         VERSION_LABEL = "v-${BUILD_NUMBER}"
     }
 
