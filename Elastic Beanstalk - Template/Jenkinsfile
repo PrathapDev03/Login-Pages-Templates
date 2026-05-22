@@ -5,7 +5,7 @@ pipeline {
         AWS_ACCOUNT_ID = 379113716280
         AWS_DEFAULT_REGION = "ap-southeast-1"
 
-        IMAGE_REPO_NAME = "frontend-project"
+        IMAGE_REPO_NAME = "ebs_login"
         IMAGE_TAG = "latest"
 
         ECR_REPO = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${IMAGE_REPO_NAME}"
