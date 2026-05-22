@@ -20,12 +20,6 @@ pipeline {
 
     stages {
 
-        stage('Clone Repository') {
-            steps {
-                git 'https://github.com/PrathapDev03/Login-Pages-Templates.git'
-            }
-        }
-
         stage('Build Docker Image') {
             steps {
                 dir('ECS-Template') {
@@ -37,7 +31,7 @@ pipeline {
         stage('Login to ECR') {
             steps {
                 sh '''
-                aws ecr get-login-password --region $AWS_REGION | \
+                /snap/bin/aws ecr get-login-password --region $AWS_REGION | \
                 docker login --username AWS \
                 --password-stdin $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
                 '''
@@ -70,7 +64,7 @@ pipeline {
             steps {
                 dir('ECS-Template') {
                     sh '''
-                    aws ecs register-task-definition \
+                    /snap/bin/aws ecs register-task-definition \
                     --cli-input-json file://task-definition.json
                     '''
                 }
@@ -80,7 +74,7 @@ pipeline {
         stage('Deploy to ECS Service') {
             steps {
                 sh '''
-                aws ecs update-service \
+                /snap/bin/aws ecs update-service \
                 --cluster $ECS_CLUSTER \
                 --service $ECS_SERVICE \
                 --force-new-deployment
