@@ -2,41 +2,128 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "react-login-page"
-        CONTAINER_NAME = "react-login-container"
+        AWS_ACCOUNT_ID = 379113716280
+        AWS_DEFAULT_REGION = "ap-southeast-1"
+
+        IMAGE_REPO_NAME = "frontend-project"
+        IMAGE_TAG = "latest"
+
+        ECR_REPO = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${IMAGE_REPO_NAME}"
+
+        EB_APP_NAME = "EBS_Login"
+        EB_ENV_NAME = "EBSLogin-env"
+
+        S3_BUCKET = "ebs-s3-login"
+        VERSION_LABEL = "v-${BUILD_NUMBER}"
     }
 
     stages {
 
         stage('Clone Repository') {
             steps {
-                git 'https://github.com/yourusername/Login-Pages.git'
+                git branch: 'main',
+                url: 'https://github.com/PrathapDev03/Login-Pages-Templates/tree/main/Elastic%20Beanstalk%20-%20Template'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t $IMAGE_NAME .'
+                sh 'docker build -t $IMAGE_REPO_NAME:$IMAGE_TAG .'
             }
         }
 
-        stage('Stop Old Container') {
+        stage('Login to ECR') {
             steps {
                 sh '''
-                docker stop $CONTAINER_NAME || true
-                docker rm $CONTAINER_NAME || true
+                aws ecr get-login-password --region $AWS_DEFAULT_REGION | \
+                docker login --username AWS --password-stdin $ECR_REPO
                 '''
             }
         }
 
-        stage('Run Docker Container') {
+        stage('Tag Docker Image') {
             steps {
                 sh '''
-                docker run -d -p 3000:3000 \
-                --name $CONTAINER_NAME \
-                $IMAGE_NAME
+                docker tag $IMAGE_REPO_NAME:$IMAGE_TAG \
+                $ECR_REPO:$IMAGE_TAG
                 '''
             }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                sh '''
+                docker push $ECR_REPO:$IMAGE_TAG
+                '''
+            }
+        }
+
+        stage('Create Dockerrun File') {
+            steps {
+                sh '''
+                cat > Dockerrun.aws.json <<EOF
+{
+  "AWSEBDockerrunVersion": "1",
+  "Image": {
+    "Name": "$ECR_REPO:$IMAGE_TAG",
+    "Update": "true"
+  },
+  "Ports": [
+    {
+      "ContainerPort": "80"
+    }
+  ]
+}
+EOF
+                '''
+            }
+        }
+
+        stage('Zip Deployment Package') {
+            steps {
+                sh '''
+                zip deploy.zip Dockerrun.aws.json
+                '''
+            }
+        }
+
+        stage('Upload to S3') {
+            steps {
+                sh '''
+                aws s3 cp deploy.zip s3://$S3_BUCKET/deploy-$BUILD_NUMBER.zip
+                '''
+            }
+        }
+
+        stage('Create Elastic Beanstalk Version') {
+            steps {
+                sh '''
+                aws elasticbeanstalk create-application-version \
+                --application-name $EB_APP_NAME \
+                --version-label $VERSION_LABEL \
+                --source-bundle S3Bucket="$S3_BUCKET",S3Key="deploy-$BUILD_NUMBER.zip"
+                '''
+            }
+        }
+
+        stage('Deploy to Elastic Beanstalk') {
+            steps {
+                sh '''
+                aws elasticbeanstalk update-environment \
+                --environment-name $EB_ENV_NAME \
+                --version-label $VERSION_LABEL
+                '''
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Deployment Successful'
+        }
+
+        failure {
+            echo 'Deployment Failed'
         }
     }
 }
