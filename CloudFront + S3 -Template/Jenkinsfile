@@ -1,6 +1,14 @@
 pipeline {
     agent any
 
+    environment {
+        AWS_REGION = "ap-southeast-1"
+
+        S3_BUCKET = "frontend-cloudfront-bucket"
+
+        DISTRIBUTION_ID = "E2STX8OC8VNNS"
+    }
+
     stages {
 
         stage('Clone Repository') {
@@ -9,18 +17,24 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Upload Files To S3') {
             steps {
-                sh 'docker build -t login-page .'
+                dir('CloudFront + S3 - Template') {
+
+                    sh '''
+                    aws s3 sync . s3://$S3_BUCKET --delete
+                    '''
+                }
             }
         }
 
-        stage('Run Docker Container') {
+        stage('Invalidate CloudFront Cache') {
             steps {
+
                 sh '''
-                docker stop login-container || true
-                docker rm login-container || true
-                docker run -d -p 80:80 --name login-container login-page
+                aws cloudfront create-invalidation \
+                --distribution-id $DISTRIBUTION_ID \
+                --paths "/*"
                 '''
             }
         }
