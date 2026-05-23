@@ -30,7 +30,7 @@ pipeline {
                 --distribution-id $DISTRIBUTION_ID \
                 --paths "/*"
                 '''
-            }
+            } 
         }
     }
 }
