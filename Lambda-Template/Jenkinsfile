@@ -2,40 +2,38 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "cyberpunk-login-page"
-        CONTAINER_NAME = "cyberpunk-login-container"
+        FUNCTION_NAME = "lambda-frontend"
+        AWS_REGION = "ap-southeast-1"
     }
 
     stages {
 
         stage('Clone Repository') {
             steps {
-                git 'https://github.com/yourusername/Login-Pages.git'
+                git 'https://github.com/PrathapDev03/Login-Pages-Templates.git'
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Create ZIP Package') {
             steps {
-                sh 'docker build -t $IMAGE_NAME .'
+                dir('Lambda-Template') {
+                    sh '''
+                    zip -r lambda.zip .
+                    '''
+                }
             }
         }
 
-        stage('Stop Existing Container') {
+        stage('Deploy To Lambda') {
             steps {
-                sh '''
-                docker stop $CONTAINER_NAME || true
-                docker rm $CONTAINER_NAME || true
-                '''
-            }
-        }
-
-        stage('Run Docker Container') {
-            steps {
-                sh '''
-                docker run -d -p 80:80 \
-                --name $CONTAINER_NAME \
-                $IMAGE_NAME
-                '''
+                dir('Lambda-Template') {
+                    sh '''
+                    aws lambda update-function-code \
+                    --function-name $FUNCTION_NAME \
+                    --zip-file fileb://lambda.zip \
+                    --region $AWS_REGION
+                    '''
+                }
             }
         }
     }
