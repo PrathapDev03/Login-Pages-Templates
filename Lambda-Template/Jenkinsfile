@@ -8,12 +8,6 @@ pipeline {
 
     stages {
 
-        stage('Clone Repository') {
-            steps {
-                git 'https://github.com/PrathapDev03/Login-Pages-Templates.git'
-            }
-        }
-
         stage('Create ZIP Package') {
             steps {
                 dir('Lambda-Template') {
@@ -28,7 +22,7 @@ pipeline {
             steps {
                 dir('Lambda-Template') {
                     sh '''
-                    aws lambda update-function-code \
+                    /snap/bin/aws lambda update-function-code \
                     --function-name $FUNCTION_NAME \
                     --zip-file fileb://lambda.zip \
                     --region $AWS_REGION
