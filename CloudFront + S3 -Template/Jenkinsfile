@@ -6,7 +6,7 @@ pipeline {
 
         S3_BUCKET = "frontend-cloudfront-bucket"
 
-        DISTRIBUTION_ID = "E2STX8OC8VNNS"
+        DISTRIBUTION_ID = "ENRHAZLMMTEMD"
     }
 
     stages {
